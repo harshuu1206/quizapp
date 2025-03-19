@@ -34,12 +34,9 @@ public class UserService {
     }
 
     public User createUser(User user) {
-        System.out.println("🔹 Raw Password Before Encoding: " + user.getPassword());
+        System.out.println("🔹 Saving Password Without Encoding: " + user.getPassword());
 
-        String hashedPassword = passwordEncoder.encode(user.getPassword());
-        System.out.println("🔹 Hashed Password Stored in DB: " + hashedPassword);
-
-        user.setPassword(hashedPassword);
+        // ❌ Store plain-text password (not recommended)
         return userRepository.save(user);
     }
 
@@ -59,12 +56,4 @@ public class UserService {
         return userRepository.existsByEmail(email);
     }
 
-    // 🔹 Add this method to manually test password matching
-    public void testPasswordMatching() {
-        String rawPassword = "123456"; // The original password
-        String hashedPassword =  userRepository.findByUsername("testuser").get().getPassword(); // Copy from DB
-
-        boolean isMatch = passwordEncoder.matches(rawPassword, hashedPassword);
-        System.out.println("✅ Manual Check - Password Matches: " + isMatch);
-    }
 }
