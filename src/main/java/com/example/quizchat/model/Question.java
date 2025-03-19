@@ -1,5 +1,7 @@
 package com.example.quizchat.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -15,6 +17,7 @@ public class Question {
 
     @ManyToOne
     @JoinColumn(name = "subject_id")
+    @JsonBackReference // Prevents infinite recursion for Subject-Question relationship
     private Subject subject;
 
     @Column(name = "question_text", nullable = false)
@@ -26,7 +29,8 @@ public class Question {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonManagedReference // Allows serialization of options while preventing recursion
     private Set<Option> options = new HashSet<>();
 
     public enum Difficulty {

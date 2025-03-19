@@ -1,5 +1,7 @@
 package com.example.quizchat.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -13,12 +15,13 @@ public class Option {
 
     @ManyToOne
     @JoinColumn(name = "question_id")
+    @JsonBackReference // Prevents infinite recursion with Question
     private Question question;
 
     @Column(name = "option_text", nullable = false)
     private String optionText;
 
-    @Column(name = "is_correct")
+    @Column(name = "is_correct",nullable = false)
     private boolean isCorrect;
 
     @Column(name = "created_at")
@@ -56,11 +59,11 @@ public class Option {
 
     public boolean isCorrect() {
         return isCorrect;
-    }
+    } // ✅ Keep this getter
 
-    public void setCorrect(boolean correct) {
-        isCorrect = correct;
-    }
+    public void setIsCorrect(boolean correct) {
+        this.isCorrect = correct;
+    } // ✅ Keep this setter
 
     public LocalDateTime getCreatedAt() {
         return createdAt;

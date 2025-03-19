@@ -1,5 +1,6 @@
 package com.example.quizchat.config;
 
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -15,28 +16,24 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableWebSecurity
 public class SecurityConfig {
 
-
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable()) // Disable CSRF protection for APIs
+                .csrf(csrf -> csrf.disable()) // Disable CSRF for APIs
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // ✅ Permit Swagger API Docs and UI
                         .requestMatchers(
-                                "/v3/api-docs/**",
-                                "/swagger-ui/**",
-                                "/swagger-ui.html"
+                                "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html",
+                                "/api/auth/**", "/ws/**", "/api/public/**",
+                                "/css/**", "/js/**", "/images/**",
+                                "/api/quiz/subjects/**",
+                                "/api/quiz/questions/**",
+                                "/api/quiz/options/**" // ✅ Allow access to options API
                         ).permitAll()
-
-                        // ✅ Permit authentication and public APIs
-                        .requestMatchers("/api/auth/**", "/ws/**", "/api/public/**", "/css/**", "/js/**", "/images/**").permitAll()
-
-                        // 🔐 Require authentication for all other requests
                         .anyRequest().authenticated()
                 )
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // No sessions
-
-                .logout(logout -> logout.permitAll()); // Allow logout
+                .formLogin(form -> form.disable())
+                .httpBasic(httpBasic -> httpBasic.disable());
 
         return http.build();
     }

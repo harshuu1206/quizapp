@@ -96,7 +96,19 @@ public class QuizService {
     public List<UserAnswer> getUserAnswersByQuizAttemptId(Long quizAttemptId) {
         return userAnswerRepository.findByQuizAttemptId(quizAttemptId);
     }
+
     public Subject createSubject(Subject subject) {
         return subjectRepository.save(subject);
+    }
+
+    @Transactional
+    public Question createQuestion(Question question) {
+        if (question.getOptions() != null) {
+            for (Option option : question.getOptions()) {
+                option.setQuestion(question); // Ensure options are linked to the question
+                System.out.println("Option: " + option.getOptionText() + ", isCorrect: " + option.isCorrect()); // Debug log
+            }
+        }
+        return questionRepository.save(question);
     }
 }

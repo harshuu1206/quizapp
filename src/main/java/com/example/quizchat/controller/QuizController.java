@@ -47,6 +47,7 @@ public class QuizController {
 
     @GetMapping("/options/question/{questionId}")
     public ResponseEntity<List<Option>> getOptionsByQuestionId(@PathVariable Long questionId) {
+
         return ResponseEntity.ok(quizService.getOptionsByQuestionId(questionId));
     }
 
@@ -92,5 +93,10 @@ public class QuizController {
     public ResponseEntity<Subject> createSubject(@RequestBody Subject subject) {
         Subject savedSubject = quizService.createSubject(subject);
         return ResponseEntity.ok(savedSubject);
+    }
+    @PostMapping("/questions")
+    public ResponseEntity<Question> createQuestion(@RequestBody Question question) {
+        Question savedQuestion = quizService.createQuestion(question);
+        return ResponseEntity.ok(savedQuestion);
     }
 }
