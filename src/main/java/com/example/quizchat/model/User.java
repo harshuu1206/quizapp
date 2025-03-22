@@ -23,15 +23,19 @@ public class User {
     @Column(nullable = false)
     private String password;
 
-    private boolean isAdmin;
+    @Column(nullable = false)
+    private String role;
+
+    @Column(nullable = false)
+    private Boolean isAdmin = false; // Default value set to false
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    @OneToMany(mappedBy = "user")
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private Set<QuizAttempt> quizAttempts = new HashSet<>();
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "room_users",
             joinColumns = @JoinColumn(name = "user_id"),
@@ -42,9 +46,15 @@ public class User {
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
+        if (role == null) {
+            role = "USER"; // Ensure default role assignment
+        }
+        if (isAdmin == null) {
+            isAdmin = false; // Ensure default value for isAdmin
+        }
     }
 
-    // Getters and setters
+    // ✅ Getters and Setters
     public Long getId() {
         return id;
     }
@@ -77,12 +87,20 @@ public class User {
         this.password = password;
     }
 
-    public boolean isAdmin() {
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
+    }
+
+    public Boolean getIsAdmin() {
         return isAdmin;
     }
 
-    public void setAdmin(boolean admin) {
-        isAdmin = admin;
+    public void setIsAdmin(Boolean isAdmin) {
+        this.isAdmin = isAdmin;
     }
 
     public LocalDateTime getCreatedAt() {
@@ -107,5 +125,23 @@ public class User {
 
     public void setChatRooms(Set<ChatRoom> chatRooms) {
         this.chatRooms = chatRooms;
+    }
+
+    // ✅ Check if the user is an admin based on the role
+    public boolean isAdmin() {
+        return isAdmin != null && isAdmin;
+    }
+
+    // ✅ Prevent exposing sensitive data
+    @Override
+    public String toString() {
+        return "User{" +
+                "id=" + id +
+                ", username='" + username + '\'' +
+                ", email='" + email + '\'' +
+                ", role='" + role + '\'' +
+                ", isAdmin=" + isAdmin +
+                ", createdAt=" + createdAt +
+                '}';
     }
 }

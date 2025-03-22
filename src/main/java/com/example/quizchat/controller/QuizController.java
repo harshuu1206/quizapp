@@ -89,14 +89,30 @@ public class QuizController {
     public ResponseEntity<List<UserAnswer>> getUserAnswersByQuizAttemptId(@PathVariable Long attemptId) {
         return ResponseEntity.ok(quizService.getUserAnswersByQuizAttemptId(attemptId));
     }
+
     @PostMapping("/subjects")
     public ResponseEntity<Subject> createSubject(@RequestBody Subject subject) {
         Subject savedSubject = quizService.createSubject(subject);
         return ResponseEntity.ok(savedSubject);
     }
+
     @PostMapping("/questions")
     public ResponseEntity<Question> createQuestion(@RequestBody Question question) {
         Question savedQuestion = quizService.createQuestion(question);
         return ResponseEntity.ok(savedQuestion);
+    }
+
+    @GetMapping("/results/{userId}")
+    public ResponseEntity<?> getUserQuizResults(@PathVariable Long userId) {
+        List<QuizAttempt> attempts = quizService.getQuizAttemptsByUserId(userId);
+        if (attempts.isEmpty()) {
+            return ResponseEntity.ok(Map.of("score", 0, "totalQuestions", 0));
+        }
+
+        QuizAttempt latestAttempt = attempts.get(attempts.size() - 1); // Get the most recent attempt
+        return ResponseEntity.ok(Map.of(
+                "score", latestAttempt.getScore(),
+                "totalQuestions", latestAttempt.getTotalQuestions()
+        ));
     }
 }
