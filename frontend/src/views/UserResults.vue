@@ -9,6 +9,8 @@
 </template>
 
 <script>
+import axiosInstance from "@/axiosInstance"; // ✅ Import axios instance
+
 export default {
   data() {
     return {
@@ -18,8 +20,8 @@ export default {
       error: null,
     };
   },
-  mounted() {
-    const userId = localStorage.getItem("userId"); // ✅ Retrieve userId
+  async mounted() {
+    const userId = localStorage.getItem("userId");
 
     if (!userId) {
       this.error = "User not found. Please log in.";
@@ -27,29 +29,22 @@ export default {
       return;
     }
 
-    fetch(`http://localhost:8090/api/quiz/results/${userId}`) // ✅ Fetch results for the logged-in user
-      .then(response => {
-        if (!response.ok) {
-          throw new Error("Failed to fetch results");
-        }
-        return response.json();
-      })
-      .then(data => {
-        if (data.length === 0) {
-          this.error = "No quiz attempts found.";
-        } else {
-          let lastAttempt = data[data.length - 1]; // ✅ Get the latest quiz attempt
-          this.score = lastAttempt.score;
-          this.totalQuestions = lastAttempt.totalQuestions;
-        }
-      })
-      .catch(error => {
-        console.error("Error fetching results:", error);
-        this.error = "Error fetching results. Please try again.";
-      })
-      .finally(() => {
-        this.loading = false;
-      });
+    try {
+      const response = await axiosInstance.get(`/api/quiz/results/${userId}`);
+
+      if (!response.data || response.data.length === 0) {
+        this.error = "No quiz attempts found.";
+      } else {
+        let lastAttempt = response.data[response.data.length - 1]; // ✅ Get latest attempt
+        this.score = lastAttempt.score;
+        this.totalQuestions = lastAttempt.totalQuestions;
+      }
+    } catch (error) {
+      console.error("Error fetching results:", error);
+      this.error = "Error fetching results. Please try again.";
+    } finally {
+      this.loading = false;
+    }
   },
 };
 </script>

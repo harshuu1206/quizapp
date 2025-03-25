@@ -1,102 +1,164 @@
 <template>
-  <div class="home-container">
-    <!-- Navbar -->
-    <nav class="navbar">
-      <h1 class="logo">QuizChat</h1>
-      <div class="nav-links">
-        <router-link to="/">Home</router-link>
-        <router-link to="/login">Login</router-link>
-        <router-link to="/register">Register</router-link>
-        <router-link to="/dashboard">Dashboard</router-link>
-        <router-link to="/quiz">Quiz</router-link>
-        <router-link to="/result">Results</router-link>
-      </div>
-    </nav>
+  <div class="login-container">
+    <div class="login-box">
+      <h2>Login</h2>
+      <form @submit.prevent="login">
+        <div class="input-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" v-model="email" placeholder="Enter email" required />
+        </div>
+        <div class="input-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" v-model="password" placeholder="Enter password" required />
+        </div>
+        <button type="submit" class="btn">Login</button>
 
-    <!-- Hero Section with Background Image -->
-    <div class="background">
-      <div class="overlay">
-        <h2>Welcome to QuizChat</h2>
-        <p>Test your knowledge and challenge your friends!</p>
-        <button @click="goToRegister" class="btn">Get Started</button>
-      </div>
+        <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
+      </form>
+
+      <p class="register-link">
+        Don't have an account? <router-link to="/register">Register</router-link>
+      </p>
     </div>
   </div>
 </template>
 
 <script>
+import axios from "axios";
+
 export default {
+  data() {
+    return {
+      email: "",
+      password: "",
+      errorMessage: "",
+    };
+  },
+  created() {
+    // Axios interceptor: Automatically adds token to requests
+    axios.interceptors.request.use(
+      (config) => {
+        const token = localStorage.getItem("token");
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+      },
+      (error) => Promise.reject(error)
+    );
+  },
   methods: {
-    goToRegister() {
-      this.$router.push("/register");
-    }
-  }
+    async login() {
+      console.log("🛠️ Sending Login Request:", this.email, this.password);
+
+      try {
+        const response = await axios.post("http://localhost:8090/api/auth/login", {
+          email: this.email,
+          password: this.password,
+        });
+
+        console.log("✅ Server Response:", response.data);
+
+        if (response.data.token) {
+          localStorage.setItem("token", response.data.token.trim());
+          console.log("✅ Token saved in localStorage:", localStorage.getItem("token"));
+
+          this.$router.push("/dashboard");
+        } else {
+          this.errorMessage = response.data.error || "Invalid response from server";
+        }
+      } catch (error) {
+        console.error("❌ Login Error:", error);
+        this.errorMessage = error.response?.data?.error || "Login failed. Please check your credentials.";
+      }
+    },
+  },
 };
 </script>
 
 <style scoped>
-/* Navbar */
-.navbar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  background-color: #007bff;
-  color: white;
-  padding: 15px 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  z-index: 1000;
-}
-
-.nav-links {
-  display: flex;
-  gap: 15px; /* Add spacing between links */
-  padding-right: 20px; /* Ensure space at the end */
-}
-
-.nav-links a {
-  color: white;
-  text-decoration: none;
-  font-size: 16px;
-  white-space: nowrap; /* Prevent text from breaking */
-  padding: 8px 12px; /* Increase padding */
-}
-
-.nav-links a:hover {
-  text-decoration: underline;
-}
-
-/* Background Image */
-.background {
-  background: url("@/assets/study-image.jpg") no-repeat center center/cover;
-  height: 100vh;
+/* Background */
+.login-container {
   display: flex;
   justify-content: center;
   align-items: center;
-  text-align: center;
-  position: relative;
+  height: 100vh;
+  background: linear-gradient(135deg, #007bff, #00d4ff);
 }
 
-.overlay {
-  background: rgba(0, 0, 0, 0.5);
-  padding: 20px;
+/* Login Box */
+.login-box {
+  background: white;
+  padding: 30px;
   border-radius: 10px;
-  color: white;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
 }
 
+/* Form Inputs */
+.input-group {
+  margin-bottom: 15px;
+  text-align: left;
+}
+
+.input-group label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 5px;
+  color: #333;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 16px;
+}
+
+/* Login Button */
 .btn {
-  background-color: #007bff;
+  width: 100%;
+  background: #007bff;
   color: white;
-  padding: 10px 15px;
+  padding: 10px;
   border: none;
   border-radius: 5px;
+  font-size: 18px;
   cursor: pointer;
-  margin-top: 10px;
+  transition: background 0.3s ease;
 }
 
 .btn:hover {
-  background-color: #0056b3;
+  background: #0056b3;
+}
+
+/* Messages */
+.error-message {
+  color: red;
+  margin-top: 10px;
+}
+
+.success-message {
+  color: green;
+  margin-top: 10px;
+}
+
+/* Register Link */
+.register-link {
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+.register-link a {
+  color: #007bff;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.register-link a:hover {
+  text-decoration: underline;
 }
 </style>

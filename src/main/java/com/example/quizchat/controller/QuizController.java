@@ -52,25 +52,31 @@ public class QuizController {
     }
 
     @PostMapping("/attempts")
-    public ResponseEntity<QuizAttempt> saveQuizAttempt(@RequestBody Map<String, Object> request) {
-        Long userId = Long.valueOf(request.get("userId").toString());
-        Long subjectId = Long.valueOf(request.get("subjectId").toString());
-        int score = Integer.parseInt(request.get("score").toString());
-        int totalQuestions = Integer.parseInt(request.get("totalQuestions").toString());
-        int timeTaken = Integer.parseInt(request.get("timeTaken").toString());
+    public ResponseEntity<?> saveQuizAttempt(@RequestBody Map<String, Object> request) {
+        try {
+            Long userId = Long.valueOf(request.get("userId").toString());
+            Long subjectId = Long.valueOf(request.get("subjectId").toString());
+            int score = Integer.parseInt(request.get("score").toString());
+            int totalQuestions = Integer.parseInt(request.get("totalQuestions").toString());
+            int timeTaken = Integer.parseInt(request.get("timeTaken").toString());
 
-        List<Map<String, Object>> answersData = (List<Map<String, Object>>) request.get("answers");
-        List<UserAnswer> answers = answersData.stream()
-                .map(answerData -> {
-                    UserAnswer answer = new UserAnswer();
-                    // Set question and option based on IDs
-                    // This is simplified - you'd need to fetch the actual entities
-                    return answer;
-                })
-                .collect(Collectors.toList());
+            List<Map<String, Object>> answersData = (List<Map<String, Object>>) request.get("answers");
+            List<UserAnswer> answers = answersData.stream().map(answerData -> {
+                UserAnswer answer = new UserAnswer();
+                answer.setSelectedAnswer(answerData.get("selectedAnswer").toString());
+                return answer;
+            }).collect(Collectors.toList());
 
-        QuizAttempt attempt = quizService.saveQuizAttempt(userId, subjectId, score, totalQuestions, timeTaken, answers);
-        return ResponseEntity.ok(attempt);
+            QuizAttempt attempt = quizService.saveQuizAttempt(userId, subjectId, score, totalQuestions, timeTaken, answers);
+
+            return ResponseEntity.ok(Map.of(
+                    "message", "Quiz submitted successfully!",
+                    "score", attempt.getScore(),
+                    "totalQuestions", attempt.getTotalQuestions()
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Failed to save quiz attempt."));
+        }
     }
 
     @GetMapping("/attempts/user/{userId}")
@@ -109,7 +115,7 @@ public class QuizController {
             return ResponseEntity.ok(Map.of("score", 0, "totalQuestions", 0));
         }
 
-        QuizAttempt latestAttempt = attempts.get(attempts.size() - 1); // Get the most recent attempt
+        QuizAttempt latestAttempt = attempts.get(attempts.size() - 1); // ✅ Get the latest attempt
         return ResponseEntity.ok(Map.of(
                 "score", latestAttempt.getScore(),
                 "totalQuestions", latestAttempt.getTotalQuestions()

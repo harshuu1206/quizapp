@@ -1,5 +1,7 @@
 package com.example.quizchat.controller;
 
+import com.example.quizchat.dto.AuthRequest;
+import com.example.quizchat.dto.AuthResponse;
 import com.example.quizchat.dto.LoginRequest;
 import com.example.quizchat.dto.SignupRequest;
 import com.example.quizchat.model.JwtUtils;
@@ -10,6 +12,12 @@ import com.example.quizchat.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,61 +33,73 @@ public class AuthController {
     private final UserService userService;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JwtUtils jwtUtils; // ✅ Inject JWT utility
+    private final JwtUtils jwtUtils;
+    private AuthenticationManager authenticationManager;
 
     @Autowired
-    public AuthController(UserService userService, PasswordEncoder passwordEncoder, JwtUtils jwtUtils, UserRepository userRepository) {
+    public AuthController(UserService userService, PasswordEncoder passwordEncoder, JwtUtils jwtUtils, UserRepository userRepository, AuthenticationManager authenticationManager) {
         this.userService = userService;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtils = jwtUtils;
+        this.authenticationManager = authenticationManager;
     }
 
-    // ✅ Register a new user
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody SignupRequest signupRequest) {
-        // Check if user already exists
         if (userRepository.findByEmail(signupRequest.getEmail()).isPresent()) {
             return ResponseEntity.badRequest().body(Map.of("error", "Email already exists"));
         }
 
-        // ✅ Hash the password before saving
-        String hashedPassword = passwordEncoder.encode(signupRequest.getPassword());
-
         User newUser = new User();
         newUser.setEmail(signupRequest.getEmail());
-        newUser.setPassword(hashedPassword); // ✅ Store hashed password
         newUser.setUsername(signupRequest.getUsername());
 
-        userRepository.save(newUser);
+        // ✅ Fix: Only hash if not already hashed
+        String hashedPassword = passwordEncoder.encode(signupRequest.getPassword());
+        newUser.setPassword(hashedPassword);
 
+        userRepository.save(newUser);
         return ResponseEntity.ok(Map.of("message", "User registered successfully"));
     }
 
-    // ✅ Login with JWT Token
     @PostMapping("/login")
-    public ResponseEntity<?> loginUser(@RequestBody LoginRequest loginRequest) {
-        System.out.println("🔍 Checking login for email: " + loginRequest.getEmail());
-        System.out.println("Raw Password Entered: " + loginRequest.getPassword());
+    public ResponseEntity<?> login(@RequestBody AuthRequest authRequest) {
+        System.out.println("🔍 Checking email: " + authRequest.getEmail());
+        System.out.println("🔍 Checking password: " + authRequest.getPassword());
 
-        User user = userRepository.findByEmail(loginRequest.getEmail())
-                .orElse(null);
-
-        if (user == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "User not found"));
+        // Fetch the user from DB to verify password manually
+        Optional<User> optionalUser = userRepository.findByEmail(authRequest.getEmail());
+        if (optionalUser.isEmpty()) {
+            System.out.println("❌ User not found with email: " + authRequest.getEmail());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "User not found"));
         }
 
-        System.out.println("🗝️ Stored Hashed Password: " + user.getPassword());
+        User user = optionalUser.get();
+        System.out.println("✅ Hashed password in DB: " + user.getPassword());
 
-        // Check password properly
-        if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
-            System.out.println("❌ Password does NOT match!");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "Invalid password"));
+        // Manual check if password matches
+        if (!passwordEncoder.matches(authRequest.getPassword(), user.getPassword())) {
+            System.out.println("❌ Password does not match!");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Invalid password"));
         }
 
-        System.out.println("✅ Password matched successfully!");
-        return ResponseEntity.ok(Map.of("message", "Login Successful"));
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(authRequest.getEmail(), authRequest.getPassword())
+            );
+
+            System.out.println("✅ Authentication successful!");
+
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+            String jwtToken = userService.generateToken(user);
+
+            return ResponseEntity.ok(new AuthResponse(jwtToken));
+
+        } catch (Exception e) {
+            System.out.println("❌ Authentication failed: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Invalid credentials"));
+        }
     }
 }

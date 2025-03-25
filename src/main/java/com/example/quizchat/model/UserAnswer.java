@@ -23,6 +23,9 @@ public class UserAnswer {
     @JoinColumn(name = "selected_option_id")
     private Option selectedOption;
 
+    @Column(name = "selected_answer")
+    private String selectedAnswer;  // ✅ New field for storing selected answer text
+
     @Column(name = "is_correct")
     private boolean isCorrect;
 
@@ -67,6 +70,14 @@ public class UserAnswer {
         this.selectedOption = selectedOption;
     }
 
+    public String getSelectedAnswer() {  // ✅ New Getter
+        return selectedAnswer;
+    }
+
+    public void setSelectedAnswer(String selectedAnswer) {  // ✅ New Setter
+        this.selectedAnswer = selectedAnswer;
+    }
+
     public boolean isCorrect() {
         return isCorrect;
     }
@@ -83,3 +94,4 @@ public class UserAnswer {
         this.createdAt = createdAt;
     }
 }
+

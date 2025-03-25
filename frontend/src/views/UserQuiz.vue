@@ -22,12 +22,14 @@
 </template>
 
 <script>
+import axiosInstance from "@/axiosInstance"; // ✅ Import axios instance
+
 export default {
   data() {
     return {
       selectedSubject: "",
       subjects: [
-        { displayName: "History", apiValue: "23" }, // OpenTDB category for History
+        { displayName: "History", apiValue: "23" },
         { displayName: "Science", apiValue: "17" },
         { displayName: "Math", apiValue: "19" },
       ],
@@ -45,7 +47,8 @@ export default {
         const response = await fetch(apiUrl);
         const data = await response.json();
 
-        this.questions = data.results.map(q => ({
+        this.questions = data.results.map((q, index) => ({
+          id: index,
           question: q.question,
           correctAnswer: q.correct_answer,
           options: [...q.incorrect_answers, q.correct_answer],
@@ -57,8 +60,15 @@ export default {
         console.error("Error fetching questions:", error);
       }
     },
-    submitQuiz() {
+    async submitQuiz() {
       let score = 0;
+      const userId = localStorage.getItem("userId");
+
+      if (!userId) {
+        alert("User not logged in. Please log in first.");
+        this.$router.push("/login");
+        return;
+      }
 
       this.questions.forEach((q, index) => {
         if (this.userAnswers[index] === q.correctAnswer) {
@@ -66,8 +76,29 @@ export default {
         }
       });
 
-      alert(`Your score: ${score} / ${this.questions.length}`);
-      this.$router.push("/results");
+      const totalQuestions = this.questions.length;
+      const requestBody = {
+        userId: userId,
+        subjectId: this.selectedSubject,
+        score: score,
+        totalQuestions: totalQuestions,
+        timeTaken: 60,
+        answers: this.questions.map((q, index) => ({
+          questionId: q.id,
+          selectedAnswer: this.userAnswers[index] || "",
+        })),
+      };
+
+      try {
+        const response = await axiosInstance.post("/api/quiz/attempts", requestBody);
+        console.log("Quiz submission response:", response.data); // ✅ Now using response
+
+        alert(`Quiz submitted! Score: ${score} / ${totalQuestions}`);
+        this.$router.push("/results");
+      } catch (error) {
+        console.error("Error submitting quiz:", error);
+        alert("Error submitting quiz. Please try again.");
+      }
     },
     shuffleArray(array) {
       return array.sort(() => Math.random() - 0.5);
