@@ -3,11 +3,14 @@ package com.example.quizchat.service;
 import com.example.quizchat.model.*;
 import com.example.quizchat.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 
 @Service
@@ -105,10 +108,15 @@ public class QuizService {
     public Question createQuestion(Question question) {
         if (question.getOptions() != null) {
             for (Option option : question.getOptions()) {
-                option.setQuestion(question); // Ensure options are linked to the question
-                System.out.println("Option: " + option.getOptionText() + ", isCorrect: " + option.isCorrect()); // Debug log
+                option.setQuestion(question);
+                System.out.println("Option: " + option.getOptionText() + ", isCorrect: " + option.isCorrect());
             }
         }
         return questionRepository.save(question);
     }
+    public Optional<User> getUserById(Long userId) {
+        return userRepository.findById(userId);
+    }
 }
+
+

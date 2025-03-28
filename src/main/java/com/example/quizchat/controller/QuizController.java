@@ -1,13 +1,18 @@
 package com.example.quizchat.controller;
 
 import com.example.quizchat.model.*;
+import com.example.quizchat.repository.QuestionRepository;
+import com.example.quizchat.repository.SubjectRepository;
 import com.example.quizchat.service.QuizService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
@@ -55,7 +60,17 @@ public class QuizController {
     public ResponseEntity<?> saveQuizAttempt(@RequestBody Map<String, Object> request) {
         try {
             Long userId = Long.valueOf(request.get("userId").toString());
-            Long subjectId = Long.valueOf(request.get("subjectId").toString());
+            Long receivedSubjectId = Long.valueOf(request.get("subjectId").toString());
+
+            // 🛠 Convert OpenTDB subject IDs to database subject IDs (Only if necessary)
+            Map<Long, Long> subjectMapping = Map.of(
+                    23L, 1L,  // OpenTDB "History" → DB "History" (ID: 1)
+                    17L, 2L,  // OpenTDB "Math" → DB "Mathematics" (ID: 2)
+                    19L, 3L   // OpenTDB "Science" → DB "English" (ID: 3)
+            );
+
+            Long subjectId = subjectMapping.getOrDefault(receivedSubjectId, receivedSubjectId); // Use mapped or same ID
+
             int score = Integer.parseInt(request.get("score").toString());
             int totalQuestions = Integer.parseInt(request.get("totalQuestions").toString());
             int timeTaken = Integer.parseInt(request.get("timeTaken").toString());
@@ -112,13 +127,18 @@ public class QuizController {
     public ResponseEntity<?> getUserQuizResults(@PathVariable Long userId) {
         List<QuizAttempt> attempts = quizService.getQuizAttemptsByUserId(userId);
         if (attempts.isEmpty()) {
-            return ResponseEntity.ok(Map.of("score", 0, "totalQuestions", 0));
+            return ResponseEntity.ok(Map.of("score", 0, "totalQuestions", 0, "username", "Unknown", "subject", "N/A"));
         }
 
-        QuizAttempt latestAttempt = attempts.get(attempts.size() - 1); // ✅ Get the latest attempt
+        QuizAttempt latestAttempt = attempts.get(attempts.size() - 1); // ✅ Get latest attempt
+        Optional<User> user = quizService.getUserById(userId); // Assuming user retrieval method exists
+        Optional<Subject> subject = quizService.getSubjectById(latestAttempt.getSubjectId()); // Assuming subject retrieval
+
         return ResponseEntity.ok(Map.of(
+                "username", user.map(User::getUsername).orElse("Unknown"),
                 "score", latestAttempt.getScore(),
-                "totalQuestions", latestAttempt.getTotalQuestions()
+                "totalQuestions", latestAttempt.getTotalQuestions(),
+                "subject", subject.map(Subject::getName).orElse("N/A") // ✅ Get subject name
         ));
     }
 }

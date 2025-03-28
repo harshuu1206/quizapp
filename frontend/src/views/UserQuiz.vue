@@ -29,36 +29,45 @@ export default {
     return {
       selectedSubject: "",
       subjects: [
-        { displayName: "History", apiValue: "23" },
-        { displayName: "Science", apiValue: "17" },
-        { displayName: "Math", apiValue: "19" },
+        { displayName: "History", apiValue: "1" },
+        { displayName: "Mathematics", apiValue: "2" },
+        { displayName: "English", apiValue: "3" },
       ],
       questions: [],
       userAnswers: {},
     };
   },
   methods: {
-    async fetchQuestions() {
-      if (!this.selectedSubject) return;
+  async fetchQuestions() {
+    if (!this.selectedSubject) return;
 
-      const apiUrl = `https://opentdb.com/api.php?amount=10&category=${this.selectedSubject}&difficulty=easy&type=multiple`;
+    // 🛠 Map DB subject IDs back to OpenTDB category IDs
+    const subjectToOpenTDB = {
+      1: 23, // History
+      2: 19, // Mathematics
+      3: 17  // English (Previously Science, correct it if needed)
+    };
 
-      try {
-        const response = await fetch(apiUrl);
-        const data = await response.json();
+    const opentdbCategory = subjectToOpenTDB[this.selectedSubject] || this.selectedSubject; // Default to selectedSubject if not found
 
-        this.questions = data.results.map((q, index) => ({
-          id: index,
-          question: q.question,
-          correctAnswer: q.correct_answer,
-          options: [...q.incorrect_answers, q.correct_answer],
-          shuffledOptions: this.shuffleArray([...q.incorrect_answers, q.correct_answer]),
-        }));
+    const apiUrl = `https://opentdb.com/api.php?amount=10&category=${opentdbCategory}&difficulty=easy&type=multiple`;
 
-        this.userAnswers = {};
-      } catch (error) {
-        console.error("Error fetching questions:", error);
-      }
+    try {
+      const response = await fetch(apiUrl);
+      const data = await response.json();
+
+      this.questions = data.results.map((q, index) => ({
+        id: index,
+        question: q.question,
+        correctAnswer: q.correct_answer,
+        options: [...q.incorrect_answers, q.correct_answer],
+        shuffledOptions: this.shuffleArray([...q.incorrect_answers, q.correct_answer]),
+      }));
+
+      this.userAnswers = {};
+    } catch (error) {
+      console.error("Error fetching questions:", error);
+    }
     },
     async submitQuiz() {
       let score = 0;

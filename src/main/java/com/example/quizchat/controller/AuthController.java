@@ -95,7 +95,12 @@ public class AuthController {
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
             String jwtToken = userService.generateToken(user);
 
-            return ResponseEntity.ok(new AuthResponse(jwtToken));
+            // ✅ Include userId in the response
+            Map<String, Object> response = new HashMap<>();
+            response.put("token", jwtToken);
+            response.put("userId", user.getId());
+
+            return ResponseEntity.ok(response);
 
         } catch (Exception e) {
             System.out.println("❌ Authentication failed: " + e.getMessage());

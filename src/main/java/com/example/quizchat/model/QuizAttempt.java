@@ -104,4 +104,8 @@ public class QuizAttempt {
     public void setUserAnswers(Set<UserAnswer> userAnswers) {
         this.userAnswers = userAnswers;
     }
+
+    public Long getSubjectId() {
+        return subject != null ? subject.getId() : null;
+    }
 }

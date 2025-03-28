@@ -32,6 +32,11 @@ public class Option {
         createdAt = LocalDateTime.now();
     }
 
+    public Option(String optionText, boolean isCorrect) {
+        this.optionText = optionText;
+        this.isCorrect = isCorrect;
+    }
+
     // Getters and setters
     public Long getId() {
         return id;

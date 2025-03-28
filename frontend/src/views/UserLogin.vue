@@ -61,7 +61,10 @@ export default {
 
         if (response.data.token) {
           localStorage.setItem("token", response.data.token.trim());
+          localStorage.setItem("userId", response.data.userId); // ✅ Store userId
+
           console.log("✅ Token saved in localStorage:", localStorage.getItem("token"));
+          console.log("✅ User ID saved in localStorage:", localStorage.getItem("userId"));
 
           this.$router.push("/dashboard");
         } else {
